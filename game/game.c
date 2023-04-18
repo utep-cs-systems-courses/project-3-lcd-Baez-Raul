@@ -50,8 +50,9 @@ switch_interrupt_handler()
 // axis zero for col, axis 1 for row
 
 short drawPos[2] = {screenWidth/2,screenHeight/2}, controlPos[2] = {screenWidth/2, screenHeight/2-1};
-short velocity = 0, maxVelocity = 6, colLimits[2] = {1, screenWidth-1}, rowLimits[2] = {1, screenHeight-1};
-char direction = 'w';
+short maxVelocity = 4, velocity[4] = {0,0,0,0};
+short colLimits[2] = {1, screenWidth-1}, rowLimits[2] = {1, screenHeight-1};
+short direction = 0;
 short thrust = 0;
 
 void
@@ -59,28 +60,28 @@ draw_ball(int col, int row, int thrust, unsigned short color)
 {
   fillRectangle(col-1, row-1, 3, 3, color);
   switch (direction) {
-  case 'w':
+  case 0:
     drawPixel(col,row-2,color);
     if (thrust) {
       fillRectangle(col-1,row+2, 3,1, COLOR_RED);
       drawPixel(col,row+3,COLOR_RED);
     }
     break;
-  case 'a':
+  case 1:
     drawPixel(col-2,row,color);
     if (thrust) {
       fillRectangle(col+2,row-1, 1,3, COLOR_RED);
       drawPixel(col+3,row,COLOR_RED);
     }
     break; 
-  case 's':
+  case 2:
     drawPixel(col,row+2,color);
     if (thrust) {
       fillRectangle(col-1,row-2, 3,1, COLOR_RED);
       drawPixel(col,row-3,COLOR_RED);
     }
     break;
-  case 'd':
+  case 3:
     drawPixel(col+2,row,color);
     if (thrust) {
       fillRectangle(col-2,row-1, 1,3, COLOR_RED);
@@ -118,27 +119,32 @@ void wdt_c_handler()
   short newCol = oldCol;
   short oldRow = controlPos[1];
   short newRow = oldRow;
+  
   secCount ++;
-  if (secCount >= 25) {		/* 10/sec */
-    /* Moves forward and accelerates */
-    if (switches & SW2) {
-      accelerate(&newCol,&newRow,&velocity);
-      thrust = 1;
-    }
-    /* Moves forward and decelerates */
-    if (!(switches & SW2) && velocity >= 0) {
-      accelerate(&newCol,&newRow,&velocity);
-      thrust = 0;
-    }
-    if(switches & SW1) turnLeft();
-    if(switches & SW3) turnRight();
+  if (secCount >= 12) {		/* 10/sec */
+    thrust = (switches & SW2);
+    accelerate(&newCol,&newRow,&velocity);
+    
+    
     {
-      if (step <= 2)
+      if (step <= 1)
 	step ++;
       else {
 	step = 0;
-	if ((switches & SW2) && velocity <= maxVelocity) velocity++;
-	if (!(switches & SW2) && velocity > 0) velocity--;
+	if(switches & SW1) turnLeft();
+	if(switches & SW3) turnRight();
+	if (switches & SW2) {
+	  if (direction <= 1 && (velocity[direction] >= (maxVelocity*-1))) velocity[direction]--;
+	  if (direction >= 2 && (velocity[direction] <= maxVelocity)) velocity[direction]++;
+	}
+	if (!(switches & SW2) && velocity[direction] != 0) {
+	  if (direction <= 1) velocity[direction]++;
+	  else velocity[direction]--;
+	}
+	if (direction != 0 && velocity[0] != 0) velocity[0]++;
+	if (direction != 1 && velocity[1] != 0) velocity[1]++;
+	if (direction != 2 && velocity[2] != 0) velocity[2]--;
+	if (direction != 3 && velocity[3] != 0) velocity[3]--;
       }
       secCount = 0;
     }
@@ -154,63 +160,18 @@ void wdt_c_handler()
 }
 
 void accelerate(short *newCol, short *newRow, short *velocity) {
-  switch (direction) {
-  case 'w':
-    *newRow -= *velocity;
-    break;
-  case 'a':
-    *newCol -= *velocity;
-    break;
-  case 's':
-    *newRow += *velocity;
-    break;
-  case 'd':
-    *newCol += *velocity;
-    break;
-  default:
-    velocity = velocity;
-    break;
-  }
+  *newRow += (velocity[0] + velocity[2]);
+  *newCol += (velocity[1] + velocity[3]);
 }
 
 void turnLeft() {
-  switch (direction) {
-  case 'w':
-    direction = 'a';
-    break;
-  case 'a':
-    direction = 's';
-    break;
-  case 's':
-    direction = 'd';
-    break;
-  case 'd':
-    direction = 'w';
-    break;
-  default:
-    direction = direction;
-    break;
-  }
+  if (direction >= 3) direction = 0;
+  else direction++;
 }
 
 void turnRight() {
-  switch (direction) {
-  case 'w':
-    direction = 'd';
-    break;
-  case 'a':
-    direction = 'w';
-    break;
-  case 's':
-    direction = 'a';
-    break;
-  case 'd':
-    direction = 's';
-    break;
-  default:
-    direction = direction;
-    break;
-  }
+  if (direction <= 0) direction = 3;
+  else direction--;
 }
 
 void update_shape();
