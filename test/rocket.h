@@ -2,13 +2,43 @@
 #include "lcdutils.h"
 #include "lcddraw.h"
 
-
 short drawPos[2] = {screenWidth/2,screenHeight/2}, controlPos[2] = {screenWidth/2, screenHeight/2-1};
 short colLimits[2] = {-2, screenWidth+2}, rowLimits[2] = {-2, screenHeight+2};
 
 short maxVelocity = 3, velocity[4] = {0,0,0,0};
 short direction = 0;
 short thrust = 0;
+
+unsigned char step = 0;
+char left = 0;
+char right = 0;
+void rocketMain(){
+  short oldCol = controlPos[0];
+  short newCol = oldCol;
+  short oldRow = controlPos[1];
+  short newRow = oldRow;
+  thrust = (switches & SW2);	/* Allows draw_Rocket to add engine thrust */
+  
+  if(switches & SW1) left = 1;
+  if(switches & SW3) right = 1;
+  
+  accelerate(&newRow, &newCol);
+  if (step <= 1) step ++;
+  else {
+    step = 0;
+    if (left) turnLeft();
+    if (right) turnRight();
+    left = 0;
+    right = 0;
+    
+    if (switches & SW2) {
+      if (direction <= 1 && (velocity[direction] >= (maxVelocity*-1))) velocity[direction]--;
+      if (direction >= 2 && (velocity[direction] <= maxVelocity)) velocity[direction]++;
+    }
+    decelerate();
+  }
+  updatePos(&newRow,&newCol);
+}
 
 void
 draw_Rocket(int col, int row, int thrust, unsigned short color)
@@ -49,11 +79,6 @@ draw_Rocket(int col, int row, int thrust, unsigned short color)
   }
 }
 
-short oldCol = controlPos[0];
-short newCol = oldCol;
-short oldRow = controlPos[1];
-short newRow = oldRow;
-
 void
 screen_update_Rocket()
 {
@@ -69,7 +94,7 @@ screen_update_Rocket()
 }
 
 /* Checks if new Pos is within limits, teleports to opposite edge if not */
-void updatePos(short *oldCol, short *newCol, short *oldRow, short *newRow) {
+void updatePos(short *newRow, short *newCol) {
   if (*newCol <= colLimits[0]) *newCol = colLimits[1]-1;
   else if (*newCol >= colLimits[1]) *newCol = colLimits[0]+1;
   
@@ -81,7 +106,7 @@ void updatePos(short *oldCol, short *newCol, short *oldRow, short *newRow) {
 }
 
 /* Updates x,y according to velocity vectors */
-void accelerate(short *newCol, short *newRow, short *velocity) {
+void accelerate(short *newRow, short *newCol) {
   *newRow += (velocity[0] + velocity[2]);
   *newCol += (velocity[1] + velocity[3]);
 }

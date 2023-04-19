@@ -16,7 +16,6 @@ void wdt_c_handler()
 {
   static int secCount = 0;
   secCount++;
- 
   if (secCount >= 10) {		/* 10/sec */
     rocketMain();
     secCount = 0;
