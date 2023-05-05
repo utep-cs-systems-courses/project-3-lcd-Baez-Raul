@@ -11,7 +11,7 @@ all:game.elf
 
 #additional rules for files
 game.elf: ${COMMON_OBJECTS} game.o wdt_handler.o
-	${CC} ${CFLAGS} ${LDFLAGS} -o $@ $^ -lTimer -lLcd 
+	${CC} ${CFLAGS} ${LDFLAGS} -o $@ $^ -lTimer -lLcd
 
 load: game.elf
 	msp430loader.sh $^
