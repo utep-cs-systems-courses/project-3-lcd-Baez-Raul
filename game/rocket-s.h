@@ -1,6 +1,7 @@
 #include <msp430.h>
 #include "lcdutils.h"
 #include "lcddraw.h"
+#include "buzzer.h"
 
 short drawPos[2] = {screenWidth/2,screenHeight/2}, controlPos[2] = {screenWidth/2, screenHeight/2-1};
 short colLimits[2] = {-2, screenWidth+2}, rowLimits[2] = {-2, screenHeight+2};
@@ -24,8 +25,8 @@ void rocketMain(){
   if (step <= 1) step ++;
   else {
     step = 0;
-    if(switches & SW1) turnLeft();
-    if(switches & SW3) turnRight();
+    if(switches & SW1) turnLeftS();
+    if(switches & SW3) turnRightS();
     
     if (switches & SW2) {
       if (direction <= 1 && (velocity[direction] >= (maxVelocity*-1))) velocity[direction]--;
@@ -119,13 +120,6 @@ void decelerate() {
   if (direction != 3 && velocity[3] != 0) velocity[3]--;
 }
 
-void turnLeft() {
-  if (direction >= 3) direction = 0;
-  else direction++;
-}
+void turnLeftS();
 
-void turnRight() {
-  if (direction <= 0) direction = 3;
-  else direction--;
-}
-
+void turnRightS();
